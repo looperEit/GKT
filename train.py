@@ -62,7 +62,10 @@ parser.add_argument('--test-model-dir', type=str, default='logs/expDKT', help='E
 
 
 
-args = parser.parse_args()3、解析参数——使用 parse_args() 解析添加的参数
+args = parser.parse_args()3、ArgumentParser.parse_args()方法运行解析器并将提取的数据放在一个argparse.Namespace对象中：
+#命名空间是当前定义的符号名称以及每个名称引用的对象的信息的集合。
+#命名空间视为字典，其中键是对象名称，值是对象本身。每个键值对将一个名称映射到其对应的对象。
+
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 args.factor = not args.no_factor
 print(args)
@@ -120,12 +123,12 @@ concept_num, graph, train_loader, valid_loader, test_loader = load_dataset(datas
                                                                            train_ratio=args.train_ratio, val_ratio=args.val_ratio, shuffle=args.shuffle,
                                                                            model_type=args.model, use_cuda=args.cuda)
 
-# build models
+# 构建模型
 graph_model = None
 if args.model == 'GKT':
-    if args.graph_type == 'MHA':
+    if args.graph_type == 'MHA':#定义将多头注意机制，在训练过程中无需预先定义边缘权值即可实现学习。
         graph_model = MultiHeadAttention(args.edge_types, concept_num, args.emb_dim, args.attn_dim, dropout=args.dropout)
-    elif args.graph_type == 'VAE':
+    elif args.graph_type == 'VAE':#变分自编码器(VAE)以无监督方式学习潜在图结构。
         graph_model = VAE(args.emb_dim, args.vae_encoder_dim, args.edge_types, args.vae_decoder_dim, args.vae_decoder_dim, concept_num,
                           edge_type_num=args.edge_types, tau=args.temp, factor=args.factor, dropout=args.dropout, bias=args.bias)
         vae_loss = VAELoss(concept_num, edge_type_num=args.edge_types, prior=args.prior, var=args.var)
@@ -133,6 +136,12 @@ if args.model == 'GKT':
             vae_loss = vae_loss.cuda()
     if args.cuda and args.graph_type in ['MHA', 'VAE']:
         graph_model = graph_model.cuda()
+#上面部分是传统GNN所需要做的，MHA解决周围部分结点对目标节点的影响，VAE学习潜在的图结构
+
+#但是并没法解决模拟熟练程度的时间过度。（没有办法扩展这些边缘特征学习机制）
+
+#所以已下定义GKT模型
+
     model = GKT(concept_num, args.hid_dim, args.emb_dim, args.edge_types, args.graph_type, graph=graph, graph_model=graph_model,
                 dropout=args.dropout, bias=args.bias, has_cuda=args.cuda)
 elif args.model == 'DKT':
