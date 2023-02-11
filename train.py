@@ -20,7 +20,8 @@ from processing import load_dataset
 # Email: jhljx8918@gmail.com
 
 #argparse 模块是 Python 内置的一个用于命令项选项与参数解析的模块，argparse 模块可以让人轻松编写用户友好的命令行接口。
-
+#----------------------设置命令行的提示参数--------------------------
+#相当于安装LL的时候的哪些提示的显示
 parser = argparse.ArgumentParser()#1、创建一个解析器——创建 ArgumentParser() 对象
 parser.add_argument('--no-cuda', action='store_false', default=True, help='Disables CUDA training.')#2、添加参数——调用 add_argument() 方法添加参数
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')#
@@ -66,18 +67,24 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 args.factor = not args.no_factor
 print(args)
 
-random.seed(args.seed)
+
+
+random.seed(args.seed)#随机数种子
 np.random.seed(args.seed)
-torch.manual_seed(args.seed)
+torch.manual_seed(args.seed)#设置生成随机数的种子。返回一个 torch.Generator对象。
 if args.cuda:
-    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed(args.seed)#使用随机值初始化张量（例如模型的学习权重）很常见，但有时（尤其是在研究环境中）您需要确保结果的可重复性。
     torch.cuda.manual_seed_all(args.seed)
+    #cuDNN 是英伟达专门为深度神经网络所开发出来的 GPU 加速库，针对卷积、池化等等常见操作做了非常多的底层优化，比一般的 GPU 程序要快很多。
+    #设置这个 flag 为 True，我们就可以在 PyTorch 中对模型里的卷积层进行预先的优化，也就是在每一个卷积层中测试 cuDNN 提供的所有卷积实现算法，然后选择最快的那个。
+    #使用它可能会大大增加运行时间
     torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.deterministic = True #将这个 flag 置为 True 的话，每次返回的卷积算法将是确定的，即默认算法。
+    #！！！如果配合上设置 Torch 的随机种子为固定值的话，应该可以保证每次运行网络的时候相同输入的输出是固定的。！！！
 
-res_len = 2 if args.binary else args.result_type
+res_len = 2 if args.binary else args.result_type 
 
-# Save model and meta-data. Always saves in a new sub-folder.
+# 保存模型和元数据。 始终保存在新的子文件夹中。
 log = None
 save_dir = args.save_dir
 if args.save_dir:
@@ -104,7 +111,7 @@ if args.save_dir:
 else:
     print("WARNING: No save_dir provided!" + "Testing (within this script) will throw an error.")
 
-# load dataset
+# 加载数据集
 dataset_path = os.path.join(args.data_dir, args.data_file)
 dkt_graph_path = os.path.join(args.dkt_graph_dir, args.dkt_graph)
 if not os.path.exists(dkt_graph_path):
