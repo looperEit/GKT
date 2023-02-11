@@ -19,10 +19,11 @@ from processing import load_dataset
 # Author: jhljx
 # Email: jhljx8918@gmail.com
 
+#argparse 模块是 Python 内置的一个用于命令项选项与参数解析的模块，argparse 模块可以让人轻松编写用户友好的命令行接口。
 
-parser = argparse.ArgumentParser()
-parser.add_argument('--no-cuda', action='store_false', default=True, help='Disables CUDA training.')
-parser.add_argument('--seed', type=int, default=42, help='Random seed.')
+parser = argparse.ArgumentParser()#1、创建一个解析器——创建 ArgumentParser() 对象
+parser.add_argument('--no-cuda', action='store_false', default=True, help='Disables CUDA training.')#2、添加参数——调用 add_argument() 方法添加参数
+parser.add_argument('--seed', type=int, default=42, help='Random seed.')#
 parser.add_argument('--data-dir', type=str, default='data', help='Data dir for loading input data.')
 parser.add_argument('--data-file', type=str, default='assistment_test15.csv', help='Name of input data file.')
 parser.add_argument('--save-dir', type=str, default='logs', help='Where to save the trained model, leave empty to not save anything.')
@@ -60,7 +61,7 @@ parser.add_argument('--test-model-dir', type=str, default='logs/expDKT', help='E
 
 
 
-args = parser.parse_args()
+args = parser.parse_args()3、解析参数——使用 parse_args() 解析添加的参数
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 args.factor = not args.no_factor
 print(args)
