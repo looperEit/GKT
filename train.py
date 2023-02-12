@@ -47,7 +47,7 @@ parser.add_argument('--result-type', type=int, default=12, help='Number of resul
 parser.add_argument('--temp', type=float, default=0.5, help='Temperature for Gumbel softmax.')
 parser.add_argument('--hard', action='store_true', default=False, help='Uses discrete samples in training forward pass.')
 parser.add_argument('--no-factor', action='store_true', default=False, help='Disables factor graph model.')
-parser.add_argument('--prior', action='store_true', default=False, help='Whether to use sparsity prior.')
+parser.add_argument('--prior', action='store_true', default=False, help='Whether to use sparsity prior.')#是否使用稀疏先验;
 parser.add_argument('--var', type=float, default=1, help='Output variance.')
 parser.add_argument('--epochs', type=int, default=50, help='Number of epochs to train.')
 parser.add_argument('--batch-size', type=int, default=128, help='Number of samples per batch.')
@@ -148,13 +148,31 @@ elif args.model == 'DKT':
     model = DKT(res_len * concept_num, args.emb_dim, concept_num, dropout=args.dropout, bias=args.bias)
 else:
     raise NotImplementedError(args.model + ' model is not implemented!')
-kt_loss = KTLoss()
+kt_loss = KTLoss() #计算损失 预测值和真实值的差距 
 
-# build optimizer
-optimizer = optim.Adam(model.parameters(), lr=args.lr)
+
+# 创建optimizer（最简单的优化算法是SGD梯度下降）
+#计算得出loss之后，通常会使用Optimizer对所构造的数学模型/网络模型进行参数优化，
+#通常情况下，优化的最终目的是使得loss趋向于最小。
+
+optimizer = optim.Adam(model.parameters(), lr=args.lr)#创建的是Adam的优化器 和梯度下降一样
+
+#optim.lr_scheduler.StepLR(optimizer, step_size, gamma=0.1, last_epoch=-1)
+#optimizer （Optimizer）：要更改学习率的优化器；
+#step_size（int）：每训练step_size个epoch，更新一次参数；
+#gamma（float）：更新lr的乘法因子；
+#last_epoch （int）：最后一个epoch的index，如果是训练了很多个epoch后中断了，继续训练，这个值就等于加载的模型的epoch。默认为-1表示从头开始训练，即从epoch=1开始。
+
+#scheduler 是用来更新学习率的。提供了一些根据epoch训练次数来调整学习率（learning rate）的方法。
+#每过step_size个epoch，做一次更新。
+#
+
 scheduler = lr_scheduler.StepLR(optimizer, step_size=args.lr_decay, gamma=args.gamma)
 
+
 # load model/optimizer/scheduler params
+# 加载模型/优化器/学习率调整参数
+
 if args.load_dir:
     if args.model == 'DKT':
         model_file_name = 'DKT'
@@ -170,9 +188,18 @@ if args.load_dir:
     scheduler.load_state_dict(torch.load(scheduler_file))
     args.save_dir = False
 
+
+
+#为什么创建了两次？
+#再次创建优化器和优化安排器
 # build optimizer
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 scheduler = lr_scheduler.StepLR(optimizer, step_size=args.lr_decay, gamma=args.gamma)
+
+#
+#前面是创建模型 
+#后面是用GKT 并采用稀疏（相对更大的范围/集合中，具有较少的响应，可以理解为只存在较少的非零值。）先验（先验知识）的内容。
+#先跳过 这里可能涉及训练方式不同？？？？？？？
 
 if args.model == 'GKT' and args.prior:
     prior = np.array([0.91, 0.03, 0.03, 0.03])  # TODO: hard coded for now
@@ -191,6 +218,7 @@ if args.cuda:
 
 
 def train(epoch, best_val_loss):
+    
     t = time.time()
     loss_train = []
     kt_train = []
