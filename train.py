@@ -222,13 +222,23 @@ def train(epoch, best_val_loss):
     t = time.time()
     loss_train = []
     kt_train = []
-    vae_train = []
-    auc_train = []
-    acc_train = []
+    vae_train = [] #这个部分是变分自编码器
+    auc_train = [] #训练AUC(Area under Curve)：Roc曲线下的面积，介于0.1和1之间。Auc作为数值可以直观的评价分类器的好坏，值越大越好。
+    acc_train = [] 
     if graph_model is not None:
         graph_model.train()
     model.train()
+#batch_idx 代表要进行多少次batch_size的迭代，十框石头一次挑一框，batch_idx即为10。
+#batch_size ： 代表每次从所有数据中取出一小筐子数据进行训练，类似挑十框石头，每次挑一筐，此时的batch_size=1。这个参数是由于深度学习中尝使用SGD（随机梯度下降）产生。
+
+#适当增加batch_size能够增加训练速度和训练精度（因为梯度下降时震动较小），过小会导致模型收敛困难。
+
+#epoch ： 把所有的训练数据全部迭代遍历一遍（单次epoch），在上面的例子是把train_loader的50000个数据遍历一遍，举例的话是将十框石头全部搬一遍称为一个epoch。
+#数据个数/长度 = 1 epoch = batch_size * batch_idx
+
     for batch_idx, (features, questions, answers) in enumerate(train_loader):
+    #for i ,data in enumerate(dataset) i为索引 data部分是每一个索引下所对应的数据
+     
         t1 = time.time()
         if args.cuda:
             features, questions, answers = features.cuda(), questions.cuda(), answers.cuda()
