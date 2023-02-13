@@ -66,7 +66,7 @@ args = parser.parse_args()3、ArgumentParser.parse_args()方法运行解析器�
 #命名空间是当前定义的符号名称以及每个名称引用的对象的信息的集合。
 #命名空间视为字典，其中键是对象名称，值是对象本身。每个键值对将一个名称映射到其对应的对象。
 
-args.cuda = not args.no_cuda and torch.cuda.is_available()
+args.cuda = not args.no_cuda and torch.cuda.is_available() #args.no_cuda 表示设没设置禁用cuda 并且在返回指示 CUDA 当前是否可用。
 args.factor = not args.no_factor
 print(args)
 
