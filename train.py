@@ -22,42 +22,78 @@ from processing import load_dataset
 #argparse 模块是 Python 内置的一个用于命令项选项与参数解析的模块，argparse 模块可以让人轻松编写用户友好的命令行接口。
 #----------------------设置命令行的提示参数--------------------------
 #相当于安装LL的时候的哪些提示的显示
-parser = argparse.ArgumentParser()#1、创建一个解析器——创建 ArgumentParser() 对象
-parser.add_argument('--no-cuda', action='store_false', default=True, help='Disables CUDA training.')#2、添加参数——调用 add_argument() 方法添加参数
-parser.add_argument('--seed', type=int, default=42, help='Random seed.')#
+#1、创建一个解析器——创建 ArgumentParser() 对象
+parser = argparse.ArgumentParser()
+#2、添加参数——调用 add_argument() 方法添加参数
+parser.add_argument('--no-cuda', action='store_false', default=True, help='Disables CUDA training.')#禁用 CUDA 训练
+parser.add_argument('--seed', type=int, default=42, help='Random seed.')#随机种子
+#用于加载输入数据的数据目录。
 parser.add_argument('--data-dir', type=str, default='data', help='Data dir for loading input data.')
+#输入数据文件的名称。
 parser.add_argument('--data-file', type=str, default='assistment_test15.csv', help='Name of input data file.')
+#保存训练模型的位置，留空不保存任何东西。
 parser.add_argument('--save-dir', type=str, default='logs', help='Where to save the trained model, leave empty to not save anything.')
+#保存概念图的目录。
 parser.add_argument('-graph-save-dir', type=str, default='graphs', help='Dir for saving concept graphs.')
+#微调时加载训练模型的位置。' + '留空从头开始训练
 parser.add_argument('--load-dir', type=str, default='', help='Where to load the trained model if finetunning. ' + 'Leave empty to train from scratch')
+#在哪里加载预训练的 dkt 图
 parser.add_argument('--dkt-graph-dir', type=str, default='dkt-graph', help='Where to load the pretrained dkt graph.')
+#DKT图数据文件名。
 parser.add_argument('--dkt-graph', type=str, default='dkt_graph.txt', help='DKT graph data file name.')
+#要使用的模型类型，支持 GKT 和 DKT。
 parser.add_argument('--model', type=str, default='GKT', help='Model type to use, support GKT and DKT.')
+#隐藏知识状态的维度。
 parser.add_argument('--hid-dim', type=int, default=32, help='Dimension of hidden knowledge states.')
+#概念嵌入的维度。
 parser.add_argument('--emb-dim', type=int, default=32, help='Dimension of concept embedding.')
+#多头注意力层的维度。
 parser.add_argument('--attn-dim', type=int, default=32, help='Dimension of multi-head attention layers.')
+#vae 编码器中隐藏层的维度。
 parser.add_argument('--vae-encoder-dim', type=int, default=32, help='Dimension of hidden layers in vae encoder.')
+#vae 解码器中隐藏层的维度。
 parser.add_argument('--vae-decoder-dim', type=int, default=32, help='Dimension of hidden layers in vae decoder.')
+#要推断的边类型的数量。
 parser.add_argument('--edge-types', type=int, default=2, help='The number of edge types to infer.')
+#潜在概念图的类型。
 parser.add_argument('--graph-type', type=str, default='Dense', help='The type of latent concept graph.')
+#
 parser.add_argument('--dropout', type=float, default=0, help='Dropout rate (1 - keep probability).')
+#是否为神经网络层添加偏置。
 parser.add_argument('--bias', type=bool, default=True, help='Whether to add bias for neural network layers.')
+#结果是否只使用0/1。
 parser.add_argument('--binary', type=bool, default=True, help='Whether only use 0/1 for results.')
+#使用多个结果时的结果类型数。
 parser.add_argument('--result-type', type=int, default=12, help='Number of results types when multiple results are used.')
+#Gumbel softmax 的温度。
 parser.add_argument('--temp', type=float, default=0.5, help='Temperature for Gumbel softmax.')
+#在前向传播训练中使用离散样本。
 parser.add_argument('--hard', action='store_true', default=False, help='Uses discrete samples in training forward pass.')
+#禁用因子图模型。
 parser.add_argument('--no-factor', action='store_true', default=False, help='Disables factor graph model.')
-parser.add_argument('--prior', action='store_true', default=False, help='Whether to use sparsity prior.')#是否使用稀疏先验;
+#是否使用稀疏先验;
+parser.add_argument('--prior', action='store_true', default=False, help='Whether to use sparsity prior.')
+#输出方差。
 parser.add_argument('--var', type=float, default=1, help='Output variance.')
+#要训练的epoch数。
 parser.add_argument('--epochs', type=int, default=50, help='Number of epochs to train.')
+#每批样品数。
 parser.add_argument('--batch-size', type=int, default=128, help='Number of samples per batch.')
+#数据集中训练样本的比例。
 parser.add_argument('--train-ratio', type=float, default=0.6, help='The ratio of training samples in a dataset.')
+#数据集中验证样本的比例。
 parser.add_argument('--val-ratio', type=float, default=0.2, help='The ratio of validation samples in a dataset.')
+#是否打乱数据集。
 parser.add_argument('--shuffle', type=bool, default=True, help='Whether to shuffle the dataset or not.')
+#初始学习率。
 parser.add_argument('--lr', type=float, default=0.001, help='Initial learning rate.')
+#在怎样的epochs后通过伽马因子来进行LR衰减
 parser.add_argument('--lr-decay', type=int, default=200, help='After how epochs to decay LR by a factor of gamma.')
+#LR 衰减因子。
 parser.add_argument('--gamma', type=float, default=0.5, help='LR decay factor.')
+#是否测试现有模型。
 parser.add_argument('--test', type=bool, default=False, help='Whether to test for existed model.')
+#现有模型文件目录
 parser.add_argument('--test-model-dir', type=str, default='logs/expDKT', help='Existed model file dir.')
 
 
