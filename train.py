@@ -160,7 +160,7 @@ concept_num, graph, train_loader, valid_loader, test_loader = load_dataset(datas
                                                                            model_type=args.model, use_cuda=args.cuda)
 
 # 构建模型
-graph_model = None
+graph_model = None #结点特征传播学习方法，用于学习图结构。有三种 静态、多头注意力机制、VAE。
 if args.model == 'GKT':
     if args.graph_type == 'MHA':#定义将多头注意机制，在训练过程中无需预先定义边缘权值即可实现学习。
         graph_model = MultiHeadAttention(args.edge_types, concept_num, args.emb_dim, args.attn_dim, dropout=args.dropout)
@@ -172,6 +172,8 @@ if args.model == 'GKT':
             vae_loss = vae_loss.cuda()
     if args.cuda and args.graph_type in ['MHA', 'VAE']:
         graph_model = graph_model.cuda()
+        
+#上面部分是学习图结构。
 #上面部分是传统GNN所需要做的，MHA解决周围部分结点对目标节点的影响，VAE学习潜在的图结构
 
 #但是并没法解决模拟熟练程度的时间过度。（没有办法扩展这些边缘特征学习机制）
@@ -257,10 +259,10 @@ def train(epoch, best_val_loss):
     
     t = time.time()
     loss_train = []
-    kt_train = []
-    vae_train = [] #这个部分是变分自编码器
+    kt_train = []  #kt模型的损失值
+    vae_train = [] #这个部分是变分自编码器的训练结果
     auc_train = [] #训练AUC(Area under Curve)：Roc曲线下的面积，介于0.1和1之间。Auc作为数值可以直观的评价分类器的好坏，值越大越好。
-    acc_train = [] 
+    acc_train = [] #测试集的准确率的训练结果
     if graph_model is not None:
         graph_model.train()
     model.train()
@@ -291,6 +293,7 @@ def train(epoch, best_val_loss):
             auc_train.append(auc)
             acc_train.append(acc)
 
+#VAE可以定义先验分布
         if args.model == 'GKT' and args.graph_type == 'VAE':
             if args.prior:
                 loss_vae = vae_loss(ec_list, rec_list, z_prob_list, log_prior=log_prior)
@@ -367,6 +370,8 @@ def train(epoch, best_val_loss):
               'auc_val: {:.10f}'.format(np.mean(auc_val)),
               'acc_val: {:.10f}'.format(np.mean(acc_val)),
               'time: {:.4f}s'.format(time.time() - t))
+        
+#对比损失值选出最佳模型。
     if args.save_dir and np.mean(loss_val) < best_val_loss:
         print('Best model so far, saving...')
         torch.save(model.state_dict(), model_file)
