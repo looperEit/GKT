@@ -32,6 +32,11 @@ def pad_collate(batch):
     features = [torch.LongTensor(feat) for feat in features]
     questions = [torch.LongTensor(qt) for qt in questions]
     answers = [torch.LongTensor(ans) for ans in answers]
+    #pad_sequence(sequences,batch_first,padding_value)
+    #sequernces可变长度序列列表
+    #batch_first=false 按列填充0 true按行扩充0
+    #padding_value=xxx 按照xxx填充
+
     feature_pad = pad_sequence(features, batch_first=True, padding_value=-1)
     question_pad = pad_sequence(questions, batch_first=True, padding_value=-1)
     answer_pad = pad_sequence(answers, batch_first=True, padding_value=-1)
@@ -41,19 +46,20 @@ def pad_collate(batch):
 def load_dataset(file_path, batch_size, graph_type, dkt_graph_path=None, train_ratio=0.7, val_ratio=0.2, shuffle=True, model_type='GKT', use_binary=True, res_len=2, use_cuda=True):
     r"""
     Parameters:
-        file_path: input file path of knowledge tracing data
-        batch_size: the size of a student batch
-        graph_type: the type of the concept graph
-        shuffle: whether to shuffle the dataset or not
-        use_cuda: whether to use GPU to accelerate training speed
+        file_path：知识溯源数据的输入文件路径
+         batch_size：学生批次的大小
+         graph_type：概念图的类型
+         shuffle：是否打乱数据集
+         use_cuda：是否使用GPU加速训练速度
     Return:
-        concept_num: the number of all concepts(or questions)
-        graph: the static graph is graph type is in ['Dense', 'Transition', 'DKT'], otherwise graph is None
-        train_data_loader: data loader of the training dataset
-        valid_data_loader: data loader of the validation dataset
-        test_data_loader: data loader of the test dataset
+        concept_num：所有概念（或问题）的数量
+         graph: static graph is graph type is in ['Dense', 'Transition', 'DKT'], 否则graph为None
+         train_data_loader：训练数据集的数据加载器
+         valid_data_loader：验证数据集的数据加载器
+         test_data_loader：测试数据集的数据加载器
     NOTE: stole some code from https://github.com/lccasagrande/Deep-Knowledge-Tracing/blob/master/deepkt/data_util.py
     """
+    
     df = pd.read_csv(file_path)
     if "skill_id" not in df.columns:
         raise KeyError(f"The column 'skill_id' was not found on {file_path}")
