@@ -98,7 +98,8 @@ parser.add_argument('--test-model-dir', type=str, default='logs/expDKT', help='E
 
 
 
-args = parser.parse_args()3、ArgumentParser.parse_args()方法运行解析器并将提取的数据放在一个argparse.Namespace对象中：
+args = parser.parse_args()
+#3、ArgumentParser.parse_args()方法运行解析器并将提取的数据放在一个argparse.Namespace对象中：
 #命名空间是当前定义的符号名称以及每个名称引用的对象的信息的集合。
 #命名空间视为字典，其中键是对象名称，值是对象本身。每个键值对将一个名称映射到其对应的对象。
 
