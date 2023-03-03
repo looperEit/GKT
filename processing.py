@@ -13,26 +13,33 @@ from utils import build_dense_graph
 # Email: jhljx8918@gmail.com
 
 
-class KTDataset(Dataset):
+class KTDataset(Dataset): #Torch中通过重写Dataset类来处理和存储数据
+    #①__init__：传入数据，或者像下面一样直接在函数里加载数据
     def __init__(self, features, questions, answers):
         super(KTDataset, self).__init__()
         self.features = features
         self.questions = questions
         self.answers = answers
-
+        
+        
+    #③__getitem__:返回一条训练数据，并将其转换成tensor
     def __getitem__(self, index):
         return self.features[index], self.questions[index], self.answers[index]
-
+    
+    #②__len__：返回这个数据集一共有多少个item
     def __len__(self):
         return len(self.features)
 
 
-def pad_collate(batch):
-    (features, questions, answers) = zip(*batch)
-    features = [torch.LongTensor(feat) for feat in features]
+def pad_collate(batch): #进行数据批处理
+    (features, questions, answers) = zip(*batch)#表示解包batch，让它的每行都都压缩成一个新的元组
+    
+    features = [torch.LongTensor(feat) for feat in features] #将features列表中的每一个元素（每一个都是一个用户的特征列表）转化成张量
     questions = [torch.LongTensor(qt) for qt in questions]
     answers = [torch.LongTensor(ans) for ans in answers]
+    
     #pad_sequence(sequences,batch_first,padding_value)
+    #pad_sequence 函数会将不同长度的序列填充到相同的长度，使得它们可以一起进行批处理操作
     #sequernces可变长度序列列表
     #batch_first=false 按列填充0 true按行扩充0
     #padding_value=xxx 按照xxx填充
@@ -71,22 +78,25 @@ def load_dataset(file_path, batch_size, graph_type, dkt_graph_path=None, train_r
     # if not (df['correct'].isin([0, 1])).all():
     #     raise KeyError(f"The values of the column 'correct' must be 0 or 1.")
 
-    # Step 1.1 - Remove questions without skill
+    # Step 1.1 - Remove questions without skill 处理skill为空的行 直接删除
     df.dropna(subset=['skill_id'], inplace=True)
 
-    # Step 1.2 - Remove users with a single answer
+    # Step 1.2 - Remove users with a single answer  移除只有一条回答的记录
     df = df.groupby('user_id').filter(lambda q: len(q) > 1).copy()
 
-    # Step 2 - Enumerate skill id
+    # Step 2 - Enumerate skill id           给skill重新编号，将skill_id排序后用0、1…编号
     df['skill'], _ = pd.factorize(df['skill_id'], sort=True)  # we can also use problem_id to represent exercises
 
-    # Step 3 - Cross skill id with answer to form a synthetic feature
+    # Step 3 - Cross skill id with answer to form a synthetic feature 交叉技能id与答案形成新的综合特征
     # use_binary: (0,1); !use_binary: (1,2,3,4,5,6,7,8,9,10,11,12). Either way, the correct result index is guaranteed to be 1
     if use_binary:
         df['skill_with_answer'] = df['skill'] * 2 + df['correct']
     else:
         df['skill_with_answer'] = df['skill'] * res_len + df['correct'] - 1
+    
+    
 
+    
 
     # Step 4 - Convert to a sequence per user id and shift features 1 timestep
     feature_list = []
@@ -94,22 +104,23 @@ def load_dataset(file_path, batch_size, graph_type, dkt_graph_path=None, train_r
     answer_list = []
     seq_len_list = []
 
+    #那么其实最后用到的数据，只有特征中放入的skill_with_answer、skill、correct、
     def get_data(series):
         feature_list.append(series['skill_with_answer'].tolist())
         question_list.append(series['skill'].tolist())
         answer_list.append(series['correct'].eq(1).astype('int').tolist())
-        seq_len_list.append(series['correct'].shape[0])
+        seq_len_list.append(series['correct'].shape[0])#每个学生的答案列表长度转换为int存入 也就是每个学生的答题次数
 
     df.groupby('user_id').apply(get_data)
-    max_seq_len = np.max(seq_len_list)
+    max_seq_len = np.max(seq_len_list)#最大答题次数
     print('max seq_len: ', max_seq_len)
-    student_num = len(seq_len_list)
+    student_num = len(seq_len_list)#学生数量
     print('student num: ', student_num)
-    feature_dim = int(df['skill_with_answer'].max() + 1)
+    feature_dim = int(df['skill_with_answer'].max() + 1)#特征维度
     print('feature_dim: ', feature_dim)
-    question_dim = int(df['skill'].max() + 1)
+    question_dim = int(df['skill'].max() + 1)#问题维度=问题的知识点类别数量 不同的知识点对应不同的问题
     print('question_dim: ', question_dim)
-    concept_num = question_dim
+    concept_num = question_dim #概念的数量就是问题的维度
 
     # print('feature_dim:', feature_dim, 'res_len*question_dim:', res_len*question_dim)
     # assert feature_dim == res_len * question_dim
