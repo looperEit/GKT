@@ -104,7 +104,7 @@ def load_dataset(file_path, batch_size, graph_type, dkt_graph_path=None, train_r
     answer_list = []
     seq_len_list = []
 
-    #那么其实最后用到的数据，只有特征中放入的skill_with_answer、skill、correct、
+    #那么其实最后用到的数据，只有特征中放入的skill_with_answer、skill、correct
     def get_data(series):
         feature_list.append(series['skill_with_answer'].tolist())
         question_list.append(series['skill'].tolist())
@@ -132,6 +132,7 @@ def load_dataset(file_path, batch_size, graph_type, dkt_graph_path=None, train_r
     train_dataset, val_dataset, test_dataset = torch.utils.data.random_split(kt_dataset, [train_size, val_size, test_size])
     print('train_size: ', train_size, 'val_size: ', val_size, 'test_size: ', test_size)
 
+    #
     train_data_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=pad_collate)
     valid_data_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=pad_collate)
     test_data_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=shuffle, collate_fn=pad_collate)
