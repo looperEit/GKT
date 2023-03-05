@@ -14,7 +14,8 @@ from torch.autograd import Variable
 class MLP(nn.Module):
     """Two-layer fully-connected ReLU net with batch norm."""
 
-    def __init__(self, input_dim, hidden_dim, output_dim, dropout=0., bias=True):
+    # 参数分别是输入数据维度、中间隐层维度、输出数据维度，dropout控制dropout概率（也就是通过丢失结点增加鲁棒性）、偏置是增加
+    def __init__(self, input_dim, hidden_dim, output_dim, dropout=0., bias=True): 
         super(MLP, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim, bias=bias)
         self.fc2 = nn.Linear(hidden_dim, output_dim, bias=bias)
