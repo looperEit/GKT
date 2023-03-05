@@ -14,33 +14,50 @@ from torch.autograd import Variable
 class MLP(nn.Module):
     """Two-layer fully-connected ReLU net with batch norm."""
 
+    # 参数分别是输入数据维度、中间隐层维度、输出数据维度，dropout控制dropout概率（也就是通过丢失结点增加鲁棒性）、偏置是增加可能会影响变化的因素
     def __init__(self, input_dim, hidden_dim, output_dim, dropout=0., bias=True):
-        super(MLP, self).__init__()
+        super(MLP, self).__init__()、
+        # 输入层
         self.fc1 = nn.Linear(input_dim, hidden_dim, bias=bias)
+        # 输出层
         self.fc2 = nn.Linear(hidden_dim, output_dim, bias=bias)
+        # 批量归一化 对输出标准化 消除输出差异较大的影响  
         self.norm = nn.BatchNorm1d(output_dim)
-        # the paper said they added Batch Normalization for the output of MLPs, as shown in Section 4.2
+        
+        # 该论文称他们为 MLP 的输出添加了 Batch Normalization，如第 4.2 节所示
+        
         self.dropout = dropout
         self.output_dim = output_dim
         self.init_weights()
 
+    # 初始化步骤
     def init_weights(self):
+        #对所有子模块进行遍历
         for m in self.modules():
+            # 判断m是否是nn.Linear这个类 也就是是否为线性变换层
             if isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight.data)
-                m.bias.data.fill_(0.1)
+                # 采用Xavier 正态分布 
+                nn.init.xavier_normal_(m.weight.data) # 初始化权重 
+                m.bias.data.fill_(0.1) # 初始化bias为0.1
+                
+            # 判断m是否是nn.batchnormld 批标准化层 
             elif isinstance(m, nn.BatchNorm1d):
+                # 将scale参数设置为1，将bias参数设置为0
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
-
+                
+                
+                
+    # 用于将输入的tensor进行标准化，其中self.norm是一个BatchNorm1d层，用于对每个特征维度进行标准化。
+    # 在 MLP 中，经过每个全连接层（即 nn.Linear），都会接上一个 batch normalization 层，将每一层的输出进行规范化，以使得网络更易于训练。
     def batch_norm(self, inputs):
         if inputs.numel() == self.output_dim or inputs.numel() == 0:
             # batch_size == 1 or 0 will cause BatchNorm error, so return the input directly
             return inputs
-        if len(inputs.size()) == 3:
-            x = inputs.view(inputs.size(0) * inputs.size(1), -1)
-            x = self.norm(x)
-            return x.view(inputs.size(0), inputs.size(1), -1)
+        if len(inputs.size()) == 3:                              # 如果输入inputs是一个形状为(batch_size, sequence_length, feature_dim)的3D张量，
+            x = inputs.view(inputs.size(0) * inputs.size(1), -1) # 将把它reshape成形状为(batch_size * sequence_length, feature_dim)的2D张量x，
+            x = self.norm(x)                                     # 并对它进行Batch Normalization。
+            return x.view(inputs.size(0), inputs.size(1), -1)    # 将x再reshape回形状为(batch_size, sequence_length, feature_dim)的3D张量，并返回。
         else:  # len(input_size()) == 2
             return self.norm(inputs)
 
