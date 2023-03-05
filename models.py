@@ -19,22 +19,28 @@ class GKT(nn.Module):
 
     def __init__(self, concept_num, hidden_dim, embedding_dim, edge_type_num, graph_type, graph=None, graph_model=None, dropout=0.5, bias=True, binary=False, has_cuda=False):
         super(GKT, self).__init__()
-        self.concept_num = concept_num
-        self.hidden_dim = hidden_dim
-        self.embedding_dim = embedding_dim
-        self.edge_type_num = edge_type_num
+        self.concept_num = concept_num     # concept_num：表示概念数量
+        self.hidden_dim = hidden_dim       # hidden_dim：表示隐藏层维度 再默认条件下设定为32层
+        self.embedding_dim = embedding_dim # embedding_dim：表示嵌入维度 
+        self.edge_type_num = edge_type_num # edge_type_num：表示边的类型数量
 
-        self.res_len = 2 if binary else 12
+        self.res_len = 2 if binary else 12 # 
         self.has_cuda = has_cuda
-
-        assert graph_type in ['Dense', 'Transition', 'DKT', 'PAM', 'MHA', 'VAE']
+        
+        
+        # 默认情况下args-model = 'GKT' graph_type = Dense graph_model = NONE? 
+        assert graph_type in ['Dense', 'Transition', 'DKT', 'PAM', 'MHA', 'VAE']  #断言确定graph_type值在这几个值之间
         self.graph_type = graph_type
         if graph_type in ['Dense', 'Transition', 'DKT']:
             assert edge_type_num == 2
+            # 这边传过来的graph值，其实是一个邻接矩阵张量，也就是数据处理过程中构建的图
             assert graph is not None and graph_model is None
+            # 相当于类型转换，将张量转换为模型内部的一个可以操作的值，方便进行更新操作。
             self.graph = nn.Parameter(graph)  # [concept_num, concept_num]
-            self.graph.requires_grad = False  # fix parameter
+            self.graph.requires_grad = False  # fix parameter 指示是否需要在反向传播的时候更新，这里提示为不需要更新
             self.graph_model = graph_model
+            
+            
         else:  # ['PAM', 'MHA', 'VAE']
             assert graph is None
             self.graph = graph  # None
@@ -46,19 +52,37 @@ class GKT(nn.Module):
             self.graph_model = graph_model
 
         # one-hot feature and question
-        one_hot_feat = torch.eye(self.res_len * self.concept_num)
-        self.one_hot_feat = one_hot_feat.cuda() if self.has_cuda else one_hot_feat
-        self.one_hot_q = torch.eye(self.concept_num, device=self.one_hot_feat.device)
-        zero_padding = torch.zeros(1, self.concept_num, device=self.one_hot_feat.device)
-        self.one_hot_q = torch.cat((self.one_hot_q, zero_padding), dim=0)
-        # concept and concept & response embeddings
+        one_hot_feat = torch.eye(self.res_len * self.concept_num) # eye生成一个二维张量，对角元素为1，其余元素为0 提供了一个self.res_len * self.concept_num维的张量
+        self.one_hot_feat = one_hot_feat.cuda() if self.has_cuda else one_hot_feat #是否支持 CUDA 来决定在 CPU 或 GPU 上运行代码，可以简化代码并提高效率。
+        
+        self.one_hot_q = torch.eye(self.concept_num, device=self.one_hot_feat.device) # 意思是生成一个概念类型数量的二维张量，然后放到和one_hot_feat 同样的设备上去进行计算
+        zero_padding = torch.zeros(1, self.concept_num, device=self.one_hot_feat.device) # 意思是生成一个1行概念类型数量列的二维张量，然后放到和one_hot_feat 同样的设备上去进行计算
+        
+        
+        self.one_hot_q = torch.cat((self.one_hot_q, zero_padding), dim=0) # 合二为一 把它变成 (concept_num + 1) * concept_num 矩阵 最后一行全为0
+        
+        
+        # concept and concept & response embeddings  
         self.emb_x = nn.Embedding(self.res_len * concept_num, embedding_dim)
+        # self.emb_x 将长度为 res_len * concept_num 的整数序列映射到大小为 (res_len * concept_num, embedding_dim) 的稠密向量空间。
+        
+        
         # last embedding is used for padding, so dim + 1
         self.emb_c = nn.Embedding(concept_num + 1, embedding_dim, padding_idx=-1)
-
-        # f_self function and f_neighbor functions
+        # self.emb_c 则将长度为 concept_num + 1 的整数序列映射到大小为 (concept_num + 1, embedding_dim) 的稠密向量空间。
+        # 其中，padding_idx=-1 表示将索引值为-1的输入序列的向量初始化为零向量。
+        
+       
+    
+        # f_self 函数和f_neighbor函数
+        # f_self函数是由单独的一个 mlp构成， 而f_neighber函数是由两个MLP构成
+        
         mlp_input_dim = hidden_dim + embedding_dim
         self.f_self = MLP(mlp_input_dim, hidden_dim, hidden_dim, dropout=dropout, bias=bias)
+        
+        
+        
+        
         self.f_neighbor_list = nn.ModuleList()
         if graph_type in ['Dense', 'Transition', 'DKT', 'PAM']:
             # f_in and f_out functions
