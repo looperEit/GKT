@@ -105,18 +105,18 @@ class GKT(nn.Module):
     # Aggregate step, as shown in Section 3.2.1 of the paper
     def _aggregate(self, xt, qt, ht, batch_size):
         r"""
-        Parameters:
-            xt: input one-hot question answering features at the current timestamp
-            qt: question indices for all students in a batch at the current timestamp
-            ht: hidden representations of all concepts at the current timestamp
-            batch_size: the size of a student batch
-        Shape:
-            xt: [batch_size]
-            qt: [batch_size]
-            ht: [batch_size, concept_num, hidden_dim]
-            tmp_ht: [batch_size, concept_num, hidden_dim + embedding_dim]
-        Return:
-            tmp_ht: aggregation results of concept hidden knowledge state and concept(& response) embedding
+       参数：
+             xt：在当前时间戳输入one-hot问答特征
+             qt：在当前时间戳一批中所有学生的问题索引
+             ht：当前时间戳中所有概念的隐藏表示
+             batch_size：学生批次的大小
+         形状：
+             xt: [batch_size]
+             qt：[batch_size]
+             ht: [batch_size, concept_num, hidden_dim]
+             tmp_ht: [batch_size, concept_num, hidden_dim + embedding_dim]
+         返回：
+             tmp_ht：概念隐藏知识状态和概念（&响应）嵌入的聚合结果
         """
         qt_mask = torch.ne(qt, -1)  # [batch_size], qt != -1
         x_idx_mat = torch.arange(self.res_len * self.concept_num, device=xt.device)
