@@ -96,6 +96,7 @@ class GKT(nn.Module):
         self.erase_add_gate = EraseAddGate(hidden_dim, concept_num)
         
         
+        #GRU和预测层直接使用pytorch实现的GRU单元类
         # Gate Recurrent Unit
         self.gru = nn.GRUCell(hidden_dim, hidden_dim, bias=bias)
         # prediction layer
