@@ -92,8 +92,10 @@ class GKT(nn.Module):
             for i in range(edge_type_num):
                 self.f_neighbor_list.append(MLP(2 * mlp_input_dim, hidden_dim, hidden_dim, dropout=dropout, bias=bias))
 
-        # Erase & Add Gate
+        # 擦除门和增加门 通过加权对矩阵实现更新操作 先擦除 后增加 在擦除的过程中使用Sigmoid函数而在增加门使用tanH函数
         self.erase_add_gate = EraseAddGate(hidden_dim, concept_num)
+        
+        
         # Gate Recurrent Unit
         self.gru = nn.GRUCell(hidden_dim, hidden_dim, bias=bias)
         # prediction layer
