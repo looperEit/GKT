@@ -62,51 +62,84 @@ class MLP(nn.Module):
             return self.norm(inputs)
 
     def forward(self, inputs):
-        x = F.relu(self.fc1(inputs))
-        x = F.dropout(x, self.dropout, training=self.training)  # pay attention to add training=self.training
-        x = F.relu(self.fc2(x))
-        return self.batch_norm(x)
+        x = F.relu(self.fc1(inputs))             # fc1全连接层，输出经过ReLu函数。
+        x = F.dropout(x, self.dropout, training=self.training)  # training 参数设置为self.training 仅在训练期间使用
+        x = F.relu(self.fc2(x))     # fc2是输出层 输出再次经过relu函数
+        return self.batch_norm(x)   # 进行批量归一化之后再输出
 
 
 class EraseAddGate(nn.Module):
     """
-    Erase & Add Gate module
-    NOTE: this erase & add gate is a bit different from that in DKVMN.
-    For more information about Erase & Add gate, please refer to the paper "Dynamic Key-Value Memory Networks for Knowledge Tracing"
-    The paper can be found in https://arxiv.org/abs/1611.08108
+    擦除和添加门模块
+    注意：这个擦除和添加门与 DKVMN 中的有点不同。
+    关于Erase & Add gate的更多信息，请参考论文《Dynamic Key-Value Memory Networks for Knowledge Tracing》
+    作用是将输入的特征矩阵中的旧信息删除并添加新信息，以更新模型的状态。
+    
     """
-
+    
+    # feature_dim 和concept_num两个参数 特征维度默认固定为32 概念数量为另一个参数；
     def __init__(self, feature_dim, concept_num, bias=True):
         super(EraseAddGate, self).__init__()
+        
         # weight
+        # torch.rand（x） x用于指定生成随机张量的形状 为（x,）
+        # nn.Parameter(torch.rand(concept_num))生成一个由随机数构成的可学习参数张量，其大小为(concept_num,)。
+        
         self.weight = nn.Parameter(torch.rand(concept_num))
-        self.reset_parameters()
+        self.reset_parameters() #在reset_parameters函数中，它会被初始化为均匀分布的随机值，以进行训练和优化。
+        
+        
         # erase gate
-        self.erase = nn.Linear(feature_dim, feature_dim, bias=bias)
+        # 它将输入特征矩阵中的每个特征映射到一个标量，其值域在0到1之间，表示需要从输入特征中删除的信息量。
+        self.erase = nn.Linear(feature_dim, feature_dim, bias=bias) 
+        
+        
+        
         # add gate
+        # 表示需要从输入特征中增加的信息量。
         self.add = nn.Linear(feature_dim, feature_dim, bias=bias)
 
     def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.weight.size(0))
-        self.weight.data.uniform_(-stdv, stdv)
-
+        stdv = 1. / math.sqrt(self.weight.size(0))  # 计算了一个标准差stdv，其值为1除以可学习参数self.weight的第一维的平方根。
+        self.weight.data.uniform_(-stdv, stdv) 
+        # 这里的uniform_函数用于对张量进行均匀分布的初始化，其中下划线表示在原地修改该张量。
+        # self.weight.data相当于访问weight中的data数据 对其进行后续函数操作。
+        # uniform 随机分布初始化，范围在-stdv到stdv之间
+        
+        
+        
     def forward(self, x):
         r"""
-        Params:
-            x: input feature matrix
-        Shape:
-            x: [batch_size, concept_num, feature_dim]
-            res: [batch_size, concept_num, feature_dim]
-        Return:
-            res: returned feature matrix with old information erased and new information added
-        The GKT paper didn't provide detailed explanation about this erase-add gate. As the erase-add gate in the GKT only has one input parameter,
-        this gate is different with that of the DKVMN. We used the input matrix to build the erase and add gates, rather than $\mathbf{v}_{t}$ vector in the DKVMN.
+        参数：
+             x：输入特征矩阵
+         形状：
+             x: [batch_size, concept_num, feature_dim]
+             res: [batch_size, concept_num, feature_dim]
+         返回：
+             res：返回特征矩阵，删除旧信息并添加新信息
+         GKT 论文没有提供关于这个擦除-添加门的详细解释。 由于 GKT 中的擦加门只有一个输入参数，
+         这个门与 DKVMN 的不同。 我们使用输入矩阵来构建擦除和添加门，而不是 DKVMN 中的 $\mathbf{v}_{t}$ 向量。
         """
+        
+        
         erase_gate = torch.sigmoid(self.erase(x))  # [batch_size, concept_num, feature_dim]
-        # self.weight.unsqueeze(dim=1) shape: [concept_num, 1]
-        tmp_x = x - self.weight.unsqueeze(dim=1) * erase_gate * x
+        
+        # self.weight.unsqueeze(dim=1) 扩展维度 维度变为2 然后形状是 shape: [concept_num, 1] 意思是每一维度上有concept_num和1个元素 第一维度有concept_num个 第二维度有1个
+        
+        
+        # 计算出擦除门，然后用原来的x减去擦除门得到最后的结果
+        tmp_x = x - self.weight.unsqueeze(dim=1) * erase_gate * x  
+           
+       
+        # [concept_num , 1] 会扩展成为 [1,concept_num,1]然后进行逐元素相乘
+        
+        
         add_feat = torch.tanh(self.add(x))  # [batch_size, concept_num, feature_dim]
+     
+        
         res = tmp_x + self.weight.unsqueeze(dim=1) * add_feat
+        
+        
         return res
 
 
