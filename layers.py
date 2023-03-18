@@ -133,7 +133,7 @@ class EraseAddGate(nn.Module):
        
         # [concept_num , 1] 会扩展成为 [1,concept_num,1]然后进行逐元素相乘
         
-        
+        # 增加门
         add_feat = torch.tanh(self.add(x))  # [batch_size, concept_num, feature_dim]
      
         
