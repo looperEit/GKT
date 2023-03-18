@@ -306,29 +306,35 @@ class GKT(nn.Module):
 
     def forward(self, features, questions):
         r"""
-        Parameters:
-            features: input one-hot matrix
-            questions: question index matrix
-        seq_len dimension needs padding, because different students may have learning sequences with different lengths.
-        Shape:
-            features: [batch_size, seq_len]
-            questions: [batch_size, seq_len]
-            pred_res: [batch_size, seq_len - 1]
-        Return:
-            pred_res: the correct probability of questions answered at the next timestamp
-            concept_embedding: input of VAE (optional)
-            rec_embedding: reconstructed input of VAE (optional)
-            z_prob: probability distribution of latent variable z in VAE (optional)
+        参数：
+             features：输入one-hot矩阵
+             questions：问题索引矩阵
+         seq_len 维度需要填充，因为不同的学生可能有不同长度的学习序列。
+         shape：
+             features：[batch_size, seq_len]
+             questions：[batch_size, seq_len]
+             pred_res: [batch_size, seq_len - 1]
+         return：
+             pred_res：在下一个时间戳回答问题的正确概率
+             concept_embedding：VAE的输入（可选）
+             rec_embedding：VAE 的重构输入（可选）
+             z_prob：VAE 中潜在变量 z 的概率分布（可选）
         """
-        batch_size, seq_len = features.shape
+        batch_size, seq_len = features.shape # 获取输入features的批次大小和序列长度。
+        # 创建一个形状为(batch_size, concept_num, hidden_dim)的全零张量ht，
+        # 其中batch_size是批次大小，concept_num是预定义的概念数量，hidden_dim是定义的隐藏维度。
         ht = Variable(torch.zeros((batch_size, self.concept_num, self.hidden_dim), device=features.device))
+        
+        # 空列表用于存储中间结果
         pred_list = []
-        ec_list = []  # concept embedding list in VAE
-        rec_list = []  # reconstructed embedding list in VAE
-        z_prob_list = []  # probability distribution of latent variable z in VAE
+        ec_list = []  # VAE中的概念嵌入
+        rec_list = []  # 在 VAE 中重建嵌入列表
+        z_prob_list = []  # VAE 中潜在变量 z 的概率分布
         for i in range(seq_len):
+            # 获取当前时间步的输入特征xt和问题qt。
             xt = features[:, i]  # [batch_size]
             qt = questions[:, i]  # [batch_size]
+            
             qt_mask = torch.ne(qt, -1)  # [batch_size], next_qt != -1
             tmp_ht = self._aggregate(xt, qt, ht, batch_size)  # [batch_size, concept_num, hidden_dim + embedding_dim]
             h_next, concept_embedding, rec_embedding, z_prob = self._update(tmp_ht, ht, qt)  # [batch_size, concept_num, hidden_dim]
