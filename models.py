@@ -102,7 +102,10 @@ class GKT(nn.Module):
         # prediction layer
         self.predict = nn.Linear(hidden_dim, 1, bias=bias)
 
-    # Aggregate step, as shown in Section 3.2.1 of the paper
+    
+    
+    # 聚合步骤, 在3.2.1小结展示
+    
     def _aggregate(self, xt, qt, ht, batch_size):
         r"""
        参数：
@@ -118,6 +121,7 @@ class GKT(nn.Module):
          返回：
              tmp_ht：概念隐藏知识状态和概念（&响应）嵌入的聚合结果
         """
+        
         qt_mask = torch.ne(qt, -1)  # [batch_size], qt != -1
         x_idx_mat = torch.arange(self.res_len * self.concept_num, device=xt.device)
         x_embedding = self.emb_x(x_idx_mat)  # [res_len * concept_num, embedding_dim]
