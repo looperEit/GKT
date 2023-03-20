@@ -266,7 +266,9 @@ def train(epoch, best_val_loss):
     acc_train = [] #测试集的准确率的训练结果
     if graph_model is not None:
         graph_model.train()
-    model.train()
+    model.train() #model.train是用来设置训练模式的
+    
+    
 #batch_idx 代表要进行多少次batch_size的迭代，十框石头一次挑一框，batch_idx即为10。
 #batch_size ： 代表每次从所有数据中取出一小筐子数据进行训练，类似挑十框石头，每次挑一筐，此时的batch_size=1。这个参数是由于深度学习中尝使用SGD（随机梯度下降）产生。
 
